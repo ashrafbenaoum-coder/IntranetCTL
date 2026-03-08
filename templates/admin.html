@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}Admin | Intranet Controle{% endblock %}
+{% block page_id %}admin{% endblock %}
+
+{% block content %}
+  {% set is_admin = current_user and current_user.role == "admin" %}
+  <section
+    id="admin-shell"
+    class="admin-shell"
+    data-is-admin="{{ 1 if is_admin else 0 }}"
+    data-user-id="{{ current_user.id }}"
+    data-username="{{ current_user.username }}"
+    data-permissions="{{ current_user.permissions | join(',') if current_user and current_user.permissions else '' }}"
+  >
+    <aside class="panel admin-sidebar">
+      <div class="panel-head">
+        <h1>{{ "Admin" if is_admin else "User" }}</h1>
+        <span class="tag tag-admin">Menu</span>
+      </div>
+      <nav class="admin-nav">
+        <button type="button" class="nav-item is-active" data-section="home">Home</button>
+        <button type="button" class="nav-item" data-section="library">Library</button>
+        {% if is_admin %}
+          <button type="button" class="nav-item" data-section="analyse">Analyse</button>
+          <button type="button" class="nav-item" data-section="donnes">Donnes</button>
+          <button type="button" class="nav-item" data-section="users">Users</button>
+        {% endif %}
+        <button type="button" class="nav-item" data-section="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <div class="admin-main">
+      <section id="section-home" class="panel admin-section is-active">
+        <div class="panel-head">
+          <h2>{{ "Suivi global des mouvements" if is_admin else "Mes mouvements" }}</h2>
+          <span class="tag tag-admin">Home</span>
+        </div>
+
+        <form id="filters-form" class="filters">
+          <div id="username-filter-wrap" class="{% if not is_admin %}hidden{% endif %}">
+            <label for="username-filter">Controleur</label>
+            <select id="username-filter" name="username">
+              <option value="">Tous</option>
+            </select>
+          </div>
+          <div>
+            <label for="date-from">Du</label>
+            <input id="date-from" name="date_from" type="date">
+          </div>
+          <div>
+            <label for="date-to">Au</label>
+            <input id="date-to" name="date_to" type="date">
+          </div>
+          <div class="filters-actions">
+            <button type="submit" class="btn btn-primary">Filtrer</button>
+            <button type="button" id="reset-filters" class="btn btn-ghost">Reset</button>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <table id="movements-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Controleur</th>
+                <th>Date mouvement</th>
+                <th>N Support</th>
+                <th>EAN</th>
+                <th>Code produit</th>
+                <th>Ecart +</th>
+                <th>Ecart -</th>
+              </tr>
+            </thead>
+            <tbody id="movements-body"></tbody>
+          </table>
+        </div>
+        <p id="admin-feedback" class="feedback"></p>
+      </section>
+
+      <section id="section-library" class="panel admin-section hidden">
+        <div class="panel-head">
+          <h2>Library</h2>
+          <span class="tag">Navigation</span>
+        </div>
+        <p id="library-screen-path" class="hint-text">Library</p>
+        <p id="library-feedback" class="feedback"></p>
+
+        <div id="library-view-root" class="library-screen">
+          <form id="library-create-form" class="inline-form {% if not is_admin %}hidden{% endif %}">
+            <input id="library-name" name="name" maxlength="80" placeholder="Nom de la library" required>
+            <button type="submit" class="btn btn-primary">Creation Library</button>
+          </form>
+
+          <article class="card-block">
+            <h3>Libraries</h3>
+            <div id="library-list" class="library-list"></div>
+          </article>
+        </div>
+
+        <div id="library-view-users" class="library-screen hidden">
+          <div class="library-toolbar">
+            <button type="button" id="back-library-root" class="btn btn-ghost">Retour</button>
+            <h3 id="library-users-title">Library / Users</h3>
+          </div>
+          <div id="library-users-grid" class="library-user-grid"></div>
+        </div>
+
+        <div id="library-view-months" class="library-screen hidden">
+          <div class="library-toolbar">
+            <button type="button" id="back-library-users" class="btn btn-ghost">Retour</button>
+            <h3 id="library-months-title">Library / Users / User</h3>
+          </div>
+          <div id="library-months-grid" class="folder-grid"></div>
+        </div>
+
+        <div id="library-view-days" class="library-screen hidden">
+          <div class="library-toolbar">
+            <button type="button" id="back-library-months" class="btn btn-ghost">Retour</button>
+            <h3 id="library-days-title">Library / Users / User / Month</h3>
+          </div>
+          <div id="library-days-wrap" class="day-data-wrap"></div>
+        </div>
+
+        <div id="library-view-entry" class="library-screen hidden">
+          <div class="library-toolbar">
+            <button type="button" id="back-library-entry-root" class="btn btn-ghost">Retour</button>
+            <h3 id="library-entry-title">Library / Data</h3>
+          </div>
+
+          <form id="library-data-form" class="stack-form">
+            <label for="library-support-number">N Support (8 chiffres)</label>
+            <input
+              id="library-support-number"
+              name="support_number"
+              inputmode="numeric"
+              pattern="\d{8}"
+              maxlength="8"
+              required
+            >
+
+            <label for="library-ean-code">Code EAN (8-14 chiffres)</label>
+            <div class="inline-field">
+              <input
+                id="library-ean-code"
+                name="ean_code"
+                inputmode="numeric"
+                pattern="\d{8,14}"
+                maxlength="14"
+                required
+              >
+              <button type="button" id="library-scan-toggle" class="btn btn-secondary">Scanner EAN</button>
+            </div>
+
+            <div id="library-scanner-wrap" class="scanner-wrap hidden">
+              <div id="library-reader"></div>
+              <p class="hint-text">Autorise la camera puis vise le code-barres EAN.</p>
+            </div>
+
+            <label for="library-product-code">Code produit (1-6 chiffres)</label>
+            <input
+              id="library-product-code"
+              name="product_code"
+              inputmode="numeric"
+              pattern="\d{1,6}"
+              maxlength="6"
+              required
+            >
+
+            <div class="two-col">
+              <div>
+                <label for="library-diff-plus">Nb colis ecart +</label>
+                <input id="library-diff-plus" name="diff_plus" type="number" min="0" step="1" value="0" required>
+              </div>
+              <div>
+                <label for="library-diff-minus">Nb colis ecart -</label>
+                <input id="library-diff-minus" name="diff_minus" type="number" min="0" step="1" value="0" required>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Enregistrer data</button>
+          </form>
+
+          <div id="library-last-record" class="record-card empty">
+            Aucun enregistrement pour le moment.
+          </div>
+          <p id="library-data-feedback" class="feedback"></p>
+        </div>
+      </section>
+
+      {% if is_admin %}
+        <section id="section-users" class="panel admin-section hidden">
+          <div class="panel-head">
+            <h2>Gestion Users</h2>
+            <span class="tag">Admin</span>
+          </div>
+
+          <div class="users-admin-grid">
+            <article class="card-block">
+              <h3>Creation User</h3>
+              <form id="users-create-form" class="stack-form">
+                <label for="users-create-username">Username</label>
+                <input id="users-create-username" name="username" maxlength="50" placeholder="user.exemple" required>
+
+                <label for="users-create-password">Password</label>
+                <input id="users-create-password" name="password" type="password" maxlength="120" required>
+
+                <label for="users-create-role">Role</label>
+                <select id="users-create-role" name="role">
+                  <option value="controller">Controller</option>
+                  <option value="admin">Admin</option>
+                </select>
+
+                <div>
+                  <label>Permissions</label>
+                  <div id="users-create-perms" class="users-perm-grid"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Creer user</button>
+              </form>
+              <p id="users-create-feedback" class="feedback"></p>
+            </article>
+
+            <article class="card-block">
+              <h3>Liste users</h3>
+              <div id="users-admin-list" class="users-admin-list"></div>
+              <p id="users-admin-feedback" class="feedback"></p>
+            </article>
+          </div>
+        </section>
+      {% endif %}
+
+      <section id="section-settings" class="panel admin-section hidden">
+        <div class="panel-head">
+          <h2>Settings</h2>
+          <span class="tag">Preferences</span>
+        </div>
+
+        <div class="settings-grid">
+          {% if is_admin %}
+            <article class="card-block settings-span-2">
+              <h3>Users par library</h3>
+              <p class="hint-text">Selectionne les users controller qui auront acces a la library choisie. Les comptes admin restent globaux.</p>
+              <div class="settings-library-picker">
+                <div>
+                  <label for="settings-library-select">Library</label>
+                  <select id="settings-library-select"></select>
+                </div>
+                <button type="button" id="settings-save-access" class="btn btn-primary">Sauvegarder acces</button>
+              </div>
+              <div id="settings-users-list" class="settings-users-list"></div>
+              <p id="settings-access-feedback" class="feedback"></p>
+            </article>
+          {% endif %}
+
+          <article class="card-block theme-card-block">
+            <div class="theme-card-head">
+              <div>
+                <h3>Theme</h3>
+                <p class="hint-text">Choisis un rendu fixe ou laisse l'application suivre automatiquement le theme Windows.</p>
+              </div>
+            </div>
+            <input id="theme-select" type="hidden" value="system">
+            <div class="theme-picker" role="radiogroup" aria-label="Choix du theme">
+              <button type="button" class="theme-choice" data-theme-choice="light" role="radio" aria-checked="false">
+                <span class="theme-choice-icon theme-choice-icon-sun" aria-hidden="true">&#9728;</span>
+                <span class="theme-choice-copy">
+                  <span class="theme-choice-title">Light</span>
+                  <span class="theme-choice-note">Mode clair fixe</span>
+                </span>
+              </button>
+              <button type="button" class="theme-choice" data-theme-choice="dark" role="radio" aria-checked="false">
+                <span class="theme-choice-icon theme-choice-icon-moon" aria-hidden="true">&#9790;</span>
+                <span class="theme-choice-copy">
+                  <span class="theme-choice-title">Dark</span>
+                  <span class="theme-choice-note">Mode sombre fixe</span>
+                </span>
+              </button>
+              <button type="button" class="theme-choice" data-theme-choice="system" role="radio" aria-checked="false">
+                <span class="theme-choice-icon theme-choice-icon-system" aria-hidden="true">&#128187;</span>
+                <span class="theme-choice-copy">
+                  <span class="theme-choice-title">System</span>
+                  <span class="theme-choice-note">Suit Windows automatiquement</span>
+                </span>
+              </button>
+            </div>
+            <p id="theme-status" class="theme-status">Theme synchronise avec Windows.</p>
+          </article>
+
+          <article class="card-block">
+            <h3>Compte</h3>
+            <p class="hint-text">Connecte: <strong>{{ current_user.username }}</strong> ({{ current_user.role }})</p>
+            <div class="settings-actions">
+              <form method="post" action="{{ url_for('logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-primary">Logout</button>
+              </form>
+              <a class="btn btn-primary" href="{{ url_for('login') }}">Login another account</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      {% if is_admin %}
+        <section id="section-analyse" class="panel admin-section hidden">
+          <div class="panel-head">
+            <h2>Analyse</h2>
+            <span class="tag">Admin Only</span>
+          </div>
+          <div class="analyse-tabs">
+            <button type="button" class="btn btn-ghost analyse-tab is-active" data-analyse-type="fiabilite">Taux de fiabilite</button>
+            <button type="button" class="btn btn-ghost analyse-tab" data-analyse-type="ecarts">Taux des ecarts</button>
+          </div>
+          <article class="card-block analyse-toolbar">
+            <div class="analyse-toolbar-main">
+              <div class="analyse-view-switch" role="tablist" aria-label="Vue analyse">
+                <button type="button" class="analyse-view-btn is-active" data-analyse-view="day">Par jour</button>
+                <button type="button" class="analyse-view-btn" data-analyse-view="month">Par mois</button>
+              </div>
+              <div class="analyse-filter-group">
+                <label for="analyse-month-filter">Mois</label>
+                <select id="analyse-month-filter">
+                  <option value="">Tous les mois</option>
+                </select>
+              </div>
+              <button type="button" id="analyse-refresh" class="btn btn-ghost">Actualiser</button>
+            </div>
+            <div class="analyse-meta">
+              <div id="analyse-demarque-tags" class="analyse-tags"></div>
+            </div>
+          </article>
+          <div id="analyse-summary" class="analyse-grid"></div>
+          <article id="analyse-table-wrap" class="card-block analyse-table-wrap"></article>
+          <article id="analyse-chart-wrap" class="card-block analyse-chart-wrap"></article>
+          <p id="analyse-feedback" class="feedback"></p>
+        </section>
+
+        <section id="section-donnes" class="panel admin-section hidden">
+          <div class="panel-head">
+            <h2>Donnes</h2>
+            <span class="tag">Windows Flow</span>
+          </div>
+          <article class="card-block donnes-shell">
+            <div class="donnes-stage-grid">
+              <article class="donnes-stage">
+                <div class="donnes-stage-head">
+                  <div>
+                    <p class="donnes-stage-kicker">Step 1</p>
+                    <h4>Extraction locale</h4>
+                  </div>
+                  <span class="tag">Save dialog</span>
+                </div>
+                <p class="hint-text">Excel, Word, Text et PDF ouvrent directement la fenetre Windows pour choisir ou enregistrer le fichier.</p>
+                <div id="donnes-extraction-choices" class="donnes-choices"></div>
+              </article>
+
+              <article class="donnes-stage">
+                <div class="donnes-stage-head">
+                  <div>
+                    <p class="donnes-stage-kicker">Step 2</p>
+                    <h4>Connexion source</h4>
+                  </div>
+                  <span class="tag">Open dialog</span>
+                </div>
+                <p class="hint-text">Excel et Access ouvrent la selection Windows. ODBC lance l'application Windows pour choisir le driver present sur le PC.</p>
+                <div id="donnes-connection-choices" class="donnes-choices"></div>
+              </article>
+            </div>
+
+            <article id="donnes-connection-panel" class="card-block donnes-connection-panel hidden">
+              <div class="donnes-panel-head">
+                <div>
+                  <p class="donnes-stage-kicker">Step 3</p>
+                  <h4 id="donnes-connection-title">Connection</h4>
+                </div>
+                <button type="button" id="donnes-connection-helper" class="btn btn-ghost hidden">Ouvrir Windows</button>
+              </div>
+              <form id="donnes-connection-form" class="stack-form">
+                <label id="donnes-connection-label" for="donnes-connection-input">Valeur</label>
+                <textarea id="donnes-connection-input" name="value" rows="4" required></textarea>
+                <p id="donnes-connection-hint" class="hint-text">Analyse source headers: <code>date</code>/<code>jour</code>, <code>total_colis_prepare</code>, <code>taux_fiabilite</code>.</p>
+                <div class="donnes-connection-actions">
+                  <button type="submit" class="btn btn-primary">Tester connection</button>
+                </div>
+              </form>
+              <div id="donnes-odbc-drivers" class="donnes-driver-list hidden"></div>
+            </article>
+            <p id="donnes-feedback" class="feedback"></p>
+          </article>
+        </section>
+      {% endif %}
+    </div>
+  </section>
+
+  <section id="details-drawer" class="drawer hidden">
+    <div class="drawer-content">
+      <button type="button" id="close-drawer" class="btn btn-ghost">Fermer</button>
+      <h2>Detail mouvement</h2>
+      <dl id="details-list" class="details-list"></dl>
+      <button type="button" id="delete-movement-btn" class="btn btn-danger hidden">Delete cette data</button>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='vendor/html5-qrcode.min.js', v='20260308-01') }}"></script>
+  <script src="{{ url_for('static', filename='js/admin.js', v='20260308-01') }}"></script>
+{% endblock %}

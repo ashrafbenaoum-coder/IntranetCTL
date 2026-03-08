@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Controleur | Intranet Controle{% endblock %}
+{% block page_id %}controller{% endblock %}
+
+{% block content %}
+  <section class="dashboard-grid">
+    <article class="panel panel-form">
+      <div class="panel-head">
+        <h1>Nouveau mouvement</h1>
+        <span class="tag">Controleur</span>
+      </div>
+      <form id="movement-form" class="stack-form">
+        <label for="support_number">N Support (8 chiffres)</label>
+        <input id="support_number" name="support_number" inputmode="numeric" pattern="\d{8}" maxlength="8" required>
+
+        <label for="ean_code">Code EAN (8-14 chiffres)</label>
+        <div class="inline-field">
+          <input id="ean_code" name="ean_code" inputmode="numeric" pattern="\d{8,14}" maxlength="14" required>
+          <button type="button" id="scan-toggle" class="btn btn-secondary">Scanner EAN</button>
+        </div>
+
+        <div id="scanner-wrap" class="scanner-wrap hidden">
+          <div id="reader"></div>
+          <p class="hint-text">Autorise la camera puis vise le code-barres EAN.</p>
+        </div>
+
+        <label for="product_code">Code produit (1-6 chiffres)</label>
+        <input id="product_code" name="product_code" inputmode="numeric" pattern="\d{1,6}" maxlength="6" required>
+
+        <div class="two-col">
+          <div>
+            <label for="diff_plus">Nb colis ecart +</label>
+            <input id="diff_plus" name="diff_plus" type="number" min="0" step="1" value="0" required>
+          </div>
+          <div>
+            <label for="diff_minus">Nb colis ecart -</label>
+            <input id="diff_minus" name="diff_minus" type="number" min="0" step="1" value="0" required>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Enregistrer mouvement</button>
+        <p id="form-feedback" class="feedback"></p>
+      </form>
+    </article>
+
+    <article class="panel panel-list">
+      <div class="panel-head">
+        <h2>Dernier enregistrement</h2>
+      </div>
+      <div id="last-record" class="record-card empty">
+        Aucun mouvement enregistre pour le moment.
+      </div>
+    </article>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='vendor/html5-qrcode.min.js', v='20260308-01') }}"></script>
+  <script src="{{ url_for('static', filename='js/controller.js', v='20260308-01') }}"></script>
+{% endblock %}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Intranet Controle{% endblock %}</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico', v='20260308-01') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v='20260308-02') }}">
+</head>
+<body data-page="{% block page_id %}base{% endblock %}">
+  <main class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <section class="flash-wrap">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="site-loader" class="site-loader" aria-hidden="true">
+    <div class="site-loader-panel">
+      <div class="site-loader-stage" aria-hidden="true">
+        <div class="site-loader-road"></div>
+        <div class="site-loader-lane"></div>
+        <div class="site-loader-warehouse">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="site-loader-truck">
+          <div class="truck-shadow"></div>
+          <div class="truck-box"></div>
+          <div class="truck-box-rim"></div>
+          <div class="truck-chassis"></div>
+          <div class="truck-cab-shell"></div>
+          <div class="truck-cab-roof"></div>
+          <div class="truck-window truck-window-main"></div>
+          <div class="truck-window truck-window-side"></div>
+          <div class="truck-door-line"></div>
+          <div class="truck-mirror"></div>
+          <div class="truck-bumper"></div>
+          <div class="truck-step"></div>
+          <div class="truck-light truck-light-front"></div>
+          <div class="truck-light truck-light-mid"></div>
+          <div class="truck-light truck-light-rear"></div>
+          <div class="truck-wheel truck-wheel-front"></div>
+          <div class="truck-wheel truck-wheel-mid"></div>
+          <div class="truck-wheel truck-wheel-rear"></div>
+        </div>
+      </div>
+      <div class="site-loader-copy">
+        <p id="site-loader-title" class="site-loader-title">Loading...</p>
+        <p id="site-loader-step" class="site-loader-step">Connexion en cours...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/site-loader.js', v='20260308-01') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

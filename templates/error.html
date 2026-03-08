@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Erreur {{ status }}{% endblock %}
+{% block page_id %}error{% endblock %}
+
+{% block content %}
+  <section class="panel error-panel">
+    <h1>Erreur {{ status }}</h1>
+    <p>{{ message }}</p>
+    <a class="btn btn-primary" href="{{ url_for('index') }}">Retour</a>
+  </section>
+{% endblock %}

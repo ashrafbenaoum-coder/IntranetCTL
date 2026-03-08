@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Login | Intranet Controle{% endblock %}
+{% block page_id %}login{% endblock %}
+
+{% block content %}
+  <section class="login-layout">
+    <div class="glass-panel form-panel{% if login_failed %} form-shake{% endif %}">
+      <h2>Connexion</h2>
+      <form id="login-form" method="post" action="{{ url_for('login') }}" class="stack-form" data-no-loader="true">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <label for="username">User</label>
+        <input id="username" name="username" autocomplete="username" required maxlength="50">
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="120">
+
+        <button class="btn btn-primary" type="submit">Se connecter</button>
+        <p id="login-feedback" class="feedback"></p>
+      </form>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/login.js', v='20260308-01') }}"></script>
+{% endblock %}
